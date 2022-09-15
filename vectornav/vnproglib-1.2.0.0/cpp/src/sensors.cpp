@@ -606,6 +606,11 @@ std::string VnSensor::port()
 	return _pi->pSerialPort->port();
 }
 
+vn::xplat::SerialPort & VnSensor::get_serial_port()
+{
+	return *_pi->pSerialPort;
+}
+
 ErrorDetectionMode VnSensor::sendErrorDetectionMode()
 {
 	return _pi->_sendErrorDetectionMode;

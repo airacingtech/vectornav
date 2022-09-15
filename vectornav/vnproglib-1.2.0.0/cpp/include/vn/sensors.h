@@ -13,6 +13,7 @@
 #include "packetfinder.h"
 #include "export.h"
 #include "registers.h"
+#include "serialport.h"
 
 #if PYTHON
 	#include "vn/event.h"
@@ -148,6 +149,8 @@ public:
 	///
 	/// \return The port name.
 	std::string port();
+
+	vn::xplat::SerialPort & get_serial_port();
 
 	/// \defgroup vnSensorProperties VnSensor Properties
 	/// \brief This group of methods interface with the VnSensor properties.

@@ -27,11 +27,13 @@
 #include "vectornav_msgs/msg/imu_group.hpp"
 #include "vectornav_msgs/msg/ins_group.hpp"
 #include "vectornav_msgs/msg/time_group.hpp"
+#include "mavros_msgs/msg/rtcm.hpp"
 
 // VectorNav libvncxx
 #include "vn/compositedata.h"
 #include "vn/sensors.h"
 #include "vn/util.h"
+#include "vn/rtcmmessage.h"
 
 using namespace std::chrono_literals;
 
@@ -162,6 +164,8 @@ public:
       this->create_publisher<vectornav_msgs::msg::AttitudeGroup>("vectornav/raw/attitude", 10);
     pub_ins_ = this->create_publisher<vectornav_msgs::msg::InsGroup>("vectornav/raw/ins", 10);
     pub_gps2_ = this->create_publisher<vectornav_msgs::msg::GpsGroup>("vectornav/raw/gps2", 10);
+
+    sub_rtcm_ = this->create_subscription<mavros_msgs::msg::RTCM>("/rtcm", 10, [this](mavros_msgs::msg::RTCM::SharedPtr msg){on_rtcm(msg);});
 
     if (!optimize_serial_communication(port)) {
       RCLCPP_WARN(get_logger(), "time of message delivery may be compromised!");
@@ -1053,6 +1057,15 @@ private:
     node->pub_gps2_->publish(msg);
   }
 
+  void on_rtcm(mavros_msgs::msg::RTCM::SharedPtr msg)
+  {
+    const auto rtcm_msg = vn::xplat::rtcmmessage(reinterpret_cast<char*>(msg->data.data()), msg->data.size(), 0, msg->data.size());
+    if (rtcm_msg.valid && rtcm_msg.supported)
+    {
+      vs_.get_serial_port().write(reinterpret_cast<char*>(msg->data.data()), msg->data.size());
+    }
+  }
+
   //
   // Helper Functions
   //
@@ -1205,6 +1218,8 @@ private:
   rclcpp::Publisher<vectornav_msgs::msg::AttitudeGroup>::SharedPtr pub_attitude_;
   rclcpp::Publisher<vectornav_msgs::msg::InsGroup>::SharedPtr pub_ins_;
   rclcpp::Publisher<vectornav_msgs::msg::GpsGroup>::SharedPtr pub_gps2_;
+
+  rclcpp::Subscription<mavros_msgs::msg::RTCM>::SharedPtr sub_rtcm_;
 
   /// ROS header time stamp adjustments
   double averageTimeDifference_{0};
