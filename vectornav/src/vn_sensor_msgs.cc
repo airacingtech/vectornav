@@ -22,6 +22,7 @@
 #include "sensor_msgs/msg/temperature.hpp"
 #include "sensor_msgs/msg/time_reference.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "nmea_msgs/msg/sentence.hpp"
 #include "vectornav_msgs/msg/attitude_group.hpp"
 #include "vectornav_msgs/msg/common_group.hpp"
 #include "vectornav_msgs/msg/gps_group.hpp"
@@ -75,6 +76,7 @@ public:
       "vectornav/velocity_body", 10);
     pub_pose_ =
       this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("vectornav/pose", 10);
+    pub_nmea_ = this->create_publisher<nmea_msgs::msg::Sentence>("/nmea", 10);
 
     //
     // Subscribers
@@ -298,6 +300,75 @@ private:
 
       pub_pose_->publish(msg);
     }
+
+    {
+      char buf[255]; // Buffer for GPGGA sentence
+      double time = msg_in->timegps * 1e-9;
+      uint32_t hours = time / 3600;
+      uint32_t minutes = (time - (3600 * hours)) / 60;
+      float seconds = time - (float)(3600 * hours) - (float)(60 * minutes);
+
+      // Latitude conversion
+      char lat_dir;
+      int8_t lat_degs = msg_in->position.x;
+      float lat_mins = (msg_in->position.x - (float)lat_degs) * 60.0;
+
+      if(lat_degs < 0 )
+      {
+        lat_degs *= -1;
+        lat_mins *= -1;
+        lat_dir = 'S';
+      }
+      else
+      {
+        lat_dir = 'N';
+      }
+
+      // Longitude conversion
+      char lon_dir;
+      int8_t lon_degs = msg_in->position.y;
+      float lon_mins = (msg_in->position.y - (float)lon_degs) * 60.0;
+
+      if(lon_degs < 0 )
+      {
+        lon_degs *= -1;
+        lon_mins *= -1;
+        lon_dir = 'W';
+      }
+      else
+      {
+        lon_dir = 'E';
+      }
+
+      // Populate a GPGGA sentence
+      uint8_t len = sprintf(buf, "$GPGGA,%02d%02d%04.1f,%02d%018.15f,%c,%02d%018.15f,%c,1,%d,0.9,%04.1f,M,1.0,M,,",
+                            hours,
+                            minutes,
+                            seconds,
+                            lat_degs,
+                            lat_mins,
+                            lat_dir,
+                            lon_degs,
+                            lon_mins,
+                            lon_dir,
+                            7,
+                            msg_in->position.z);
+
+      // Calculate checksum of sentence and add it to the end of the sentence
+      uint8_t checksum = 0;
+      for(int i = 1; i < len; i++)
+      {
+        checksum ^= buf[i];
+      }
+      sprintf(&buf[len], "*%02X",checksum);
+
+      // Put the sentence in a ros nmea_msgs/Sentence message and publish
+      nmea_msgs::msg::Sentence msg;
+      msg.header = msg_in->header;
+      msg.header.frame_id = "earth";
+      msg.sentence = buf;
+      pub_nmea_->publish(msg);
+    }
   }
 
   /** Convert VN time group data to ROS2 standard message types
@@ -397,6 +468,7 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::FluidPressure>::SharedPtr pub_pressure_;
   rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr pub_velocity_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;
+  rclcpp::Publisher<nmea_msgs::msg::Sentence>::SharedPtr pub_nmea_;
 
   /// Subscribers
   rclcpp::Subscription<vectornav_msgs::msg::CommonGroup>::SharedPtr sub_vn_common_;
