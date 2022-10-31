@@ -360,7 +360,8 @@ private:
       {
         checksum ^= buf[i];
       }
-      sprintf(&buf[len], "*%02X",checksum);
+      len += sprintf(&buf[len], "*%02X",checksum);
+      len += snprintf(&buf[len], 3, "\r\n");
 
       // Put the sentence in a ros nmea_msgs/Sentence message and publish
       nmea_msgs::msg::Sentence msg;
