@@ -341,18 +341,11 @@ private:
       }
 
       // Populate a GPGGA sentence
-      uint8_t len = sprintf(buf, "$GPGGA,%02d%02d%04.1f,%02d%018.15f,%c,%02d%018.15f,%c,1,%d,0.9,%04.1f,M,1.0,M,,",
+      uint8_t len = sprintf(buf, "$GPGGA,%02d%02d%04.1f,3303.71,N,9728.16,W,1,%d,0.9,160.0,M,1.0,M,,",
                             hours,
                             minutes,
                             seconds,
-                            lat_degs,
-                            lat_mins,
-                            lat_dir,
-                            lon_degs,
-                            lon_mins,
-                            lon_dir,
-                            7,
-                            msg_in->position.z);
+                            7,);
 
       // Calculate checksum of sentence and add it to the end of the sentence
       uint8_t checksum = 0;
