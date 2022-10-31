@@ -345,7 +345,7 @@ private:
                             hours,
                             minutes,
                             seconds,
-                            7,);
+                            7);
 
       // Calculate checksum of sentence and add it to the end of the sentence
       uint8_t checksum = 0;
