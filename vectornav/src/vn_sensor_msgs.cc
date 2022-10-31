@@ -11,6 +11,8 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <ctime>
+#include <time.h>
 
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 #include "geometry_msgs/msg/twist_with_covariance_stamped.hpp"
@@ -303,10 +305,10 @@ private:
 
     {
       char buf[255]; // Buffer for GPGGA sentence
-      double time = msg_in->timegps * 1e-9;
-      uint32_t hours = time / 3600;
-      uint32_t minutes = (time - (3600 * hours)) / 60;
-      float seconds = time - (float)(3600 * hours) - (float)(60 * minutes);
+      double gps_stamp = msg_in->timegps * 1e-9;
+      uint32_t hours = gps_stamp / 3600;
+      uint32_t minutes = (gps_stamp - (3600 * hours)) / 60;
+      float seconds = gps_stamp - (float)(3600 * hours) - (float)(60 * minutes);
 
       // Latitude conversion
       char lat_dir;
@@ -340,11 +342,17 @@ private:
         lon_dir = 'E';
       }
 
+      time_t result;
+      result = time(NULL);
+      auto now = std::chrono::system_clock::now();
+      struct tm* utc_now = new tm();
+      gmtime_r(&result, utc_now);
+
       // Populate a GPGGA sentence
-      uint8_t len = sprintf(buf, "$GPGGA,%02d%02d%04.1f,3303.71,N,9728.16,W,1,%d,0.9,160.0,M,1.0,M,,",
-                            hours,
-                            minutes,
-                            seconds,
+      uint8_t len = sprintf(buf, "$GPGGA,%02d%02d%02d.00,3303.71,N,9728.16,W,1,%d,0.9,160.0,M,1.0,M,,",
+                            utc_now->tm_hour,
+                            utc_now->tm_min,
+                            utc_now->tm_sec,
                             7);
 
       // Calculate checksum of sentence and add it to the end of the sentence
