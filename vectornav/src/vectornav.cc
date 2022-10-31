@@ -1059,11 +1059,12 @@ private:
 
   void on_rtcm(mavros_msgs::msg::RTCM::SharedPtr msg)
   {
-    const auto rtcm_msg = vn::xplat::rtcmmessage(reinterpret_cast<char*>(msg->data.data()), msg->data.size(), 0, msg->data.size());
-    if (rtcm_msg.valid && rtcm_msg.supported)
-    {
-      vs_.get_serial_port().write(reinterpret_cast<char*>(msg->data.data()), msg->data.size());
-    }
+    // const auto rtcm_msg = vn::xplat::rtcmmessage(reinterpret_cast<char*>(msg->data.data()), msg->data.size(), 0, msg->data.size());
+    // if (rtcm_msg.valid && rtcm_msg.supported)
+    // {
+    //   vs_.get_serial_port().write(reinterpret_cast<char*>(msg->data.data()), msg->data.size());
+    // }
+    vs_.send(std::string(msg->data.begin(), msg->data.end()), false, vn::protocol::uart::ErrorDetectionMode::ERRORDETECTIONMODE_NONE);
   }
 
   //
