@@ -25,6 +25,7 @@
 #include "sensor_msgs/msg/time_reference.hpp"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 #include "nmea_msgs/msg/sentence.hpp"
+#include "gps_msgs/msg/gps_fix.hpp"
 #include "vectornav_msgs/msg/attitude_group.hpp"
 #include "vectornav_msgs/msg/common_group.hpp"
 #include "vectornav_msgs/msg/gps_group.hpp"
@@ -78,7 +79,8 @@ public:
       "vectornav/velocity_body", 10);
     pub_pose_ =
       this->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>("vectornav/pose", 10);
-    pub_nmea_ = this->create_publisher<nmea_msgs::msg::Sentence>("/nmea", 10);
+    pub_nmea_ = this->create_publisher<nmea_msgs::msg::Sentence>("nmea", 10);
+    pub_gps_fix_ = this->create_publisher<gps_msgs::msg::GPSFix>("vectornav/gps_fix", 10);
 
     //
     // Subscribers
@@ -258,13 +260,35 @@ private:
       msg.altitude = msg_in->position.z;
 
       // Covariance (Convert NED to ENU)
-      /// TODO(Dereck): Use DOP for better estimate?
-      const std::vector<double> orientation_covariance_ = {
+      msg.position_covariance = {
         gps_posu_.y, 0.0000, 0.0000, 0.0000, gps_posu_.x, 0.0000, 0.0000, 0.0000, gps_posu_.z};
-
       msg.position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
 
       pub_gnss_->publish(msg);
+    }
+
+    // GPS Fix
+    {
+      gps_msgs::msg::GPSFix msg;
+      msg.header = msg_in->header;
+
+      if (gps_fix_ == vectornav_msgs::msg::GpsGroup::GPSFIX_NOFIX) {
+        msg.status.status = gps_msgs::msg::GPSStatus::STATUS_NO_FIX;
+      } else {
+        msg.status.status = gps_msgs::msg::GPSStatus::STATUS_FIX;
+      }
+
+      // Position
+      msg.latitude = msg_in->position.x;
+      msg.longitude = msg_in->position.y;
+      msg.altitude = msg_in->position.z;
+
+      // Covariance (Convert NED to ENU)
+      msg.position_covariance = {
+        gps_posu_.y, 0.0000, 0.0000, 0.0000, gps_posu_.x, 0.0000, 0.0000, 0.0000, gps_posu_.z};
+      msg.position_covariance_type =gps_msgs::msg::GPSFix::COVARIANCE_TYPE_DIAGONAL_KNOWN;
+
+      pub_gps_fix_->publish(msg);
     }
 
     // Velocity
@@ -471,6 +495,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::TwistWithCovarianceStamped>::SharedPtr pub_velocity_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;
   rclcpp::Publisher<nmea_msgs::msg::Sentence>::SharedPtr pub_nmea_;
+  rclcpp::Publisher<gps_msgs::msg::GPSFix>::SharedPtr pub_gps_fix_;
 
   /// Subscribers
   rclcpp::Subscription<vectornav_msgs::msg::CommonGroup>::SharedPtr sub_vn_common_;

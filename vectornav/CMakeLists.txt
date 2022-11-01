@@ -26,6 +26,7 @@ find_package(vectornav_msgs REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(mavros_msgs REQUIRED)
 find_package(nmea_msgs REQUIRED)
+find_package(gps_msgs REQUIRED)
 # vncxx
 add_subdirectory(vnproglib-1.2.0.0/cpp)
 
@@ -36,7 +37,7 @@ target_link_libraries(${PROJECT_NAME} vncxx )
 
 # vn_sensor_msgs
 add_executable(vn_sensor_msgs src/vn_sensor_msgs.cc)
-ament_target_dependencies(vn_sensor_msgs rclcpp sensor_msgs vectornav_msgs tf2_geometry_msgs nmea_msgs)
+ament_target_dependencies(vn_sensor_msgs rclcpp sensor_msgs vectornav_msgs tf2_geometry_msgs nmea_msgs gps_msgs)
 
 # install
 install(TARGETS
